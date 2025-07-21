@@ -1,5 +1,5 @@
-import {Hand, HandRank} from "./card.interface" ;
-import {FinalUserData} from "./user.interface" ;
+import {Hand, HandRank} from "./card-interface" ;
+import {FinalUserData} from "./user-interface" ;
 
 export interface PlaceBetPayload {
     amount: number;
