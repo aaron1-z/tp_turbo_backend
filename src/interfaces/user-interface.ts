@@ -6,6 +6,7 @@ export interface RawUserData {
 }
 
 export interface FinalUserData {
+    game_id: string;
     userId: string;
     username: string;
     balance: number;

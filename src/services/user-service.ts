@@ -8,6 +8,7 @@ const logger = createLogger('UserService');
 export const authenticateUserByToken = async (
     token: string,
     game_id: string
+
 ): Promise<FinalUserData | null> => { 
     try {
         const response = await apiClient.get('/service/user/detail', {
@@ -25,6 +26,9 @@ export const authenticateUserByToken = async (
             balance: rawData.balance,
             operatorId: rawData.operatorId,
             token: token,
+            game_id: game_id
+           
+            
         };
         return finalData;
 
