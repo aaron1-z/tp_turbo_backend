@@ -4,6 +4,8 @@ import { FinalUserData } from '../interfaces/user-interface';
 import { DealCardsPayload, RoundResultPayload } from '../interfaces/bet-interface';
 import { setCache } from '../utils/redis-connection';
 import { delay } from '../utils/helpers'; 
+import { queueCredit } from './bet-service';
+import { saveSettlementRecord } from './settlement-service';
 
 const createDeck = (): Card[] => {
     const deck: Card[] = [];
@@ -75,7 +77,7 @@ export const resolveRound = async (
         const finalBalance = userData.balance + winAmount;
 
         if (winAmount > 0) {
-            console.log(`(TODO) Queueing credit of ${winAmount} for user ${userData.userId}`);
+            queueCredit(userData, winAmount, roundId, debitTxnId);
         }
 
         const updatedUserData = { ...userData, balance: finalBalance };
@@ -88,8 +90,9 @@ export const resolveRound = async (
             newBalance: finalBalance,
         };
         socket.emit('round_result', roundResultPayload);
+
+         saveSettlementRecord(roundId, userData, betAmount, dealtHand, handRank, winAmount);
         
-        console.log(`(TODO) Saving settlement record for round ${roundId}`);
 
     } catch (error) {
         console.error("Error during round resolution:", error);

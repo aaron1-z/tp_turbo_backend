@@ -50,7 +50,7 @@ export const handlePlaceBet = async (io: Server, socket: Socket, payload: PlaceB
             username: userData.username,
             balance: userData.balance, 
         };
-        socket.emit('info', infoPayload);
+        socket.emit('user_info', infoPayload);
 
         logger.info({ userId: userData.userId, betAmount, roundId }, 'Bet placed and debited successfully.');
 

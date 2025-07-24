@@ -10,8 +10,28 @@ function requireEnv(name: string): string {
     return value;
 }
 
+function requireNumberEnv(name: string): number {
+    const value = requireEnv(name);
+    const num = Number(value);
+    if (isNaN(num)) {
+        console.error(`FATAL: Environment variable ${name} must be a valid number. Received: "${value}"`);
+        process.exit(1);
+    }
+    return num;
+}
+
 export const config = {
-    port: Number(process.env.PORT) || 3000,
+    port: requireNumberEnv("PORT"),
     serviceBaseUrl: requireEnv("SERVICE_BASE_URL"),
-    redisUrl: requireEnv("REDIS_URL")
+    redisUrl: requireEnv("REDIS_URL"),
+    amqpConnectionString: requireEnv("AMQP_CONNECTION_STRING"),
+    amqpExchangeName: requireEnv("AMQP_EXCHANGE_NAME"),
+    
+    db: {
+        host: requireEnv("DB_HOST"),
+        user: requireEnv("DB_USER"),
+        password: process.env.DB_PASSWORD || '',
+        database: requireEnv("DB_NAME"),
+        port: requireNumberEnv("DB_PORT"),
+    },
 };

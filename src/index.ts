@@ -5,6 +5,8 @@ import { createLogger } from './utils/logger';
 import { initializeSocketHandlers } from './socket'; 
 import { config } from './config/env-config';
 import { initializeRedis } from './utils/redis-connection';
+import { initQueue } from './utils/amqp';
+import { initializeDatabase } from './utils/db-connection';
 
 const logger = createLogger('Server');
 const PORT = config.port;
@@ -18,7 +20,10 @@ const io = new Server(httpServer, {
 const startServer = async () => {
     try {
         await initializeRedis();
-        logger.info('Services connected successfully.');
+        await initQueue();
+        await initializeDatabase();
+        
+        logger.info('All services connected successfully.');
 
         initializeSocketHandlers(io);
 
