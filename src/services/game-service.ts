@@ -1,9 +1,9 @@
 import { Server, Socket } from 'socket.io';
-import { Card, Hand, HandRank, RANKS, SUITS, PAYOUTS } from "../interfaces/card-interface";
+import { Card, Hand, HandRank, RANKS, SUITS, PAYOUTS, Rank } from "../interfaces/card-interface";
 import { FinalUserData } from '../interfaces/user-interface';
 import { DealCardsPayload, RoundResultPayload } from '../interfaces/bet-interface';
 import { setCache } from '../utils/redis-connection';
-import { delay } from '../utils/helpers';
+import { delay } from '../utils/helpers'; 
 
 const createDeck = (): Card[] => {
     const deck: Card[] = [];
@@ -29,37 +29,28 @@ const dealHand = (): Hand => {
     return randomizedDeck.slice(0, 3) as Hand;
 };
 
-const getRankValue = (rank: string): number => {
-    if (rank >= '2' && rank <= '9') return parseInt(rank);
-    if (rank === '10') return 10;
-    if (rank === 'J') return 11;
-    if (rank === 'Q') return 12;
-    if (rank === 'K') return 13;
+const getRankValue = (rank: Rank): number => {
     if (rank === 'A') return 14;
-    return 0; 
+    if (rank === 'K') return 13;
+    if (rank === 'Q') return 12;
+    if (rank === 'J') return 11;
+    return parseInt(rank);
 };
 
 const evaluateHand = (hand: Hand): HandRank => {
-    const sortedHand = [...hand].sort((a, b) => getRankValue(a.rank) - getRankValue(b.rank));
-    const [card1, card2, card3] = sortedHand;
-
-    const isFlush = card1.suit === card2.suit && card2.suit === card3.suit;
-
-    const rankValues = sortedHand.map(c => getRankValue(c.rank));
-    const isNormalStraight = rankValues[1] === rankValues[0] + 1 && rankValues[2] === rankValues[1] + 1;
-    const isAceLowStraight = rankValues[0] === 2 && rankValues[1] === 3 && rankValues[2] === 14;
+    const isFlush = hand[0].suit === hand[1].suit && hand[1].suit === hand[2].suit;
+    const ranks = hand.map(card => getRankValue(card.rank)).sort((a, b) => a - b);
+    const isNormalStraight = ranks[0] + 1 === ranks[1] && ranks[1] + 1 === ranks[2];
+    const isAceLowStraight = ranks[0] === 2 && ranks[1] === 3 && ranks[2] === 14;
     const isStraight = isNormalStraight || isAceLowStraight;
 
     if (isStraight && isFlush) return 'Straight Flush';
-    if (card1.rank === card2.rank && card2.rank === card3.rank) return '3 of a Kind';
+    if (hand[0].rank === hand[1].rank && hand[1].rank === hand[2].rank) return '3 of a Kind';
     if (isStraight) return 'Straight';
     if (isFlush) return 'Flush';
-    if (card1.rank === card2.rank || card2.rank === card3.rank) return 'Pair';
-    
+    if (hand[0].rank === hand[1].rank || hand[1].rank === hand[2].rank || hand[0].rank === hand[2].rank) return 'Pair';
     return 'High Card';
 };
-
-
 
 export const resolveRound = async (
     io: Server, 
@@ -83,6 +74,10 @@ export const resolveRound = async (
         
         const finalBalance = userData.balance + winAmount;
 
+        if (winAmount > 0) {
+            console.log(`(TODO) Queueing credit of ${winAmount} for user ${userData.userId}`);
+        }
+
         const updatedUserData = { ...userData, balance: finalBalance };
         const redisKey = `session:${socket.id}`;
         await setCache(redisKey, JSON.stringify(updatedUserData));
@@ -94,6 +89,7 @@ export const resolveRound = async (
         };
         socket.emit('round_result', roundResultPayload);
         
+        console.log(`(TODO) Saving settlement record for round ${roundId}`);
 
     } catch (error) {
         console.error("Error during round resolution:", error);

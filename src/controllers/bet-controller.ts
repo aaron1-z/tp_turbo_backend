@@ -5,6 +5,7 @@ import { PlaceBetPayload, InfoPayload } from "../interfaces/bet-interface";
 import { getCache, setCache } from "../utils/redis-connection";
 import { processDebit } from "../services/bet-service";
 import { v4 as uuidv4 } from 'uuid';
+import { resolveRound } from "../services/game-service";
 
 const logger = createLogger('GameController');
 
@@ -41,14 +42,19 @@ export const handlePlaceBet = async (io: Server, socket: Socket, payload: PlaceB
         }
 
         userData.balance -= betAmount;
+        
         await setCache(redisKey, JSON.stringify(userData));
 
         const infoPayload: InfoPayload = {
             user_id: userData.userId,
             username: userData.username,
-            balance: userData.balance,
+            balance: userData.balance, 
         };
-        socket.emit('user_info', infoPayload);
+        socket.emit('info', infoPayload);
+
+        logger.info({ userId: userData.userId, betAmount, roundId }, 'Bet placed and debited successfully.');
+
+        resolveRound(io, socket, userData, betAmount, roundId, debitResult.debitTxnId);
 
     } catch (error) {
         logger.error({ socketId: socket.id, error }, "An error occurred in handlePlaceBet controller.");
