@@ -19,9 +19,11 @@ const io = new Server(httpServer, {
 
 const startServer = async () => {
     try {
-        await initializeRedis();
-        await initQueue();
-        await initializeDatabase();
+       await Promise.all([
+            initializeRedis(),
+            initQueue(),
+            initializeDatabase()
+        ]);
         
         logger.info('All services connected successfully.');
 
